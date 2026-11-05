@@ -1,0 +1,50 @@
+
+name: Build Shadow System APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extrair projeto ZIP
+        run: |
+          mkdir extracted
+          unzip -q ShadowSystem-projeto-android.zip -d extracted
+          PROJECT_FILE=$(find extracted -name settings.gradle -print -quit)
+          if [ -z "$PROJECT_FILE" ]; then
+            echo "Não encontrei settings.gradle no ZIP"
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$PROJECT_FILE")
+          cp -R "$PROJECT_DIR"/. .
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Gerar APK
+        run: gradle assembleDebug
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shadow-System-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          
