@@ -21,15 +21,48 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Dar permissão ao Gradle
-        run: chmod +x gradlew
+      - name: Extrair projeto
+        run: |
+          mkdir extracted
+          unzip -q ShadowSystem-projeto-android.zip -d extracted
+          PROJECT_FILE=$(find extracted -name settings.gradle -print -quit)
+          if [ -z "$PROJECT_FILE" ]; then
+            echo "settings.gradle não encontrado"
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$PROJECT_FILE")
+          cp -R "$PROJECT_DIR"/. .
 
-      - name: Compilar APK
-        run: ./gradlew assembleDebug
+      - name: Corrigir compatibilidade Java e Kotlin
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
 
-      - name: Salvar APK
+          p = Path("app/build.gradle")
+          s = p.read_text()
+
+          s = re.sub(r'JavaVersion.VERSION_1_[78]', 'JavaVersion.VERSION_17', s)
+          s = re.sub(r'(?m)^(\s*sourceCompatibility\s+).+$', r'\1JavaVersion.VERSION_17', s)
+          s = re.sub(r'(?m)^(\s*targetCompatibility\s+).+$', r'\1JavaVersion.VERSION_17', s)
+
+          if not re.search(r'(?m)^\s*sourceCompatibility\s+', s):
+              s = s.replace('android {', "android {\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }", 1)
+
+          p.write_text(s)
+          PY
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Gerar APK
+        run: gradle :app:assembleDebug
+
+      - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
           name: Shadow-System-APK
           path: app/build/outputs/apk/debug/*.apk
-          
+          if-no-files-found: error
