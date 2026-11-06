@@ -56,7 +56,14 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-
+      - name: Mostrar configurações
+        run: |
+          echo "=== APP BUILD ==="
+          cat app/build.gradle
+          echo "=== ROOT BUILD ==="
+          cat build.gradle
+          echo "=== SETTINGS ==="
+          cat settings.gradle
       - name: Gerar APK
         run: gradle :app:assembleDebug
 
