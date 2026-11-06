@@ -52,6 +52,37 @@ jobs:
           p.write_text(s)
           PY
 
+      - name: Recriar configuração Android
+        run: |
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+              id 'org.jetbrains.kotlin.android'
+          }
+
+          android {
+              namespace 'com.shadowsystem.app'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'com.shadowsystem.app'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+          }
+          EOF
+          
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
